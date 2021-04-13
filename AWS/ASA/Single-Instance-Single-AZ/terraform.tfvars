@@ -19,17 +19,19 @@ region               = "ap-south-1"
 ##################################################################################
 #Define CIDR, Subnets for managment and three for Inside, Outisde and DMZ
 ###################################################################################
-vpc_cidr           = "10.1.0.0/16"
 
-mgmt_subnet        = "10.1.0.0/24"
+vpc_cidr    = "10.82.0.0/16"
 
-outside_subnet     = "10.1.1.0/24"
+mgmt        = "10.82.0.0/24"
 
-inside_subnet      = "10.1.2.0/24"
+outside     = "10.82.1.0/24"
 
-dmz_subnet         = "10.1.3.0/24" 
+inside      = "10.82.2.0/24"
 
-key_name             = "NGFW-KP"  
+dmz         = "10.82.3.0/24" 
+
+key_name    = "ciscofw"  
+
 # Generate the key if you want to login thru the  key
 
 ###########################################################################################

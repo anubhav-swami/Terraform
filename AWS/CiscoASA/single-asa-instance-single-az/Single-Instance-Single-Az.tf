@@ -239,13 +239,13 @@ resource "aws_default_security_group" "default" {
 
 
 ####
-# Network Interfaces, ASA instance, Attaching the SG to interfaces
+# Network Interfaces, ASA instance, attaching the SG to interfaces
 ####
 
 resource "aws_network_interface" "asa_mgmt" {
   description   = "asa-mgmt"
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id     = aws_subnet.mgmt_subnet[floor(count.index / var.instances_per_az)].id
+  subnet_id     = aws_subnet.mgmt[floor(count.index / var.instances_per_az)].id
   private_ips   = [var.asa_mgmt_ip]
   source_dest_check = false
 }
@@ -253,7 +253,7 @@ resource "aws_network_interface" "asa_mgmt" {
 resource "aws_network_interface" "asa_outside" {
   description = "asa-outside"
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id   = aws_subnet.outside_subnet[floor(count.index / var.instances_per_az)].id
+  subnet_id   = aws_subnet.outside[floor(count.index / var.instances_per_az)].id
   private_ips = [var.asa_outside_ip]
   source_dest_check = false
 }
@@ -261,7 +261,7 @@ resource "aws_network_interface" "asa_outside" {
 resource "aws_network_interface" "asa_inside" {
   description = "asa-inside"
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id   = aws_subnet.inside_subnet[floor(count.index / var.instances_per_az)].id
+  subnet_id   = aws_subnet.inside[floor(count.index / var.instances_per_az)].id
   private_ips = [var.asa_inside_ip]
   source_dest_check = false
 }
@@ -269,7 +269,7 @@ resource "aws_network_interface" "asa_inside" {
 resource "aws_network_interface" "asa_dmz" {
   description = "asd-dmz"
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id   = aws_subnet.dmz_subnet[floor(count.index / var.instances_per_az)].id
+  subnet_id   = aws_subnet.dmz[floor(count.index / var.instances_per_az)].id
   private_ips = [var.asa_dmz_ip]
   source_dest_check = false
 }
@@ -472,7 +472,7 @@ network_interface {
   user_data = data.template_file.startup_file.rendered
 
   tags = {
-    Name = "Cisco ASAv"
+    Name = "cisco asa"
   }
 }
 

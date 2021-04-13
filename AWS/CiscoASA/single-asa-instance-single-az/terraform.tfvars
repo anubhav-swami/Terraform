@@ -12,9 +12,9 @@ aws_secret_key      = ""
 ############################################################
 #Define New VPC in a specific Region and Avilability Zone 
 ############################################################
-vpc_name            = "Transit-Service-VPC"
+vpc_name            = "service-vpc"
 
-region               = "ap-south-1"
+region               = "us-east-1"
 
 ##################################################################################
 #Define CIDR, Subnets for managment and three for Inside, Outisde and DMZ
@@ -48,10 +48,10 @@ size                = "c5.xlarge"
 ASA_version         = "asav9-15-1-1"
 //Allowed Values = asav9-15-1, asav9-14-1-30, asav9-12-4-4, asav9-14-1-10, asav9-13-1-12
 
-asa_mgmt_ip       =     "10.1.0.10"
+asa_mgmt_ip       =     "10.82.0.10"
 
-asa_outside_ip    =     "10.1.1.10"  
+asa_outside_ip    =     "10.82.1.10"  
 
-asa_inside_ip     =     "10.1.2.10"       
+asa_inside_ip     =     "10.82.2.10"       
 
-asa_dmz_ip        =     "10.1.3.10"
+asa_dmz_ip        =     "10.82.3.10"

@@ -1,4 +1,4 @@
-hostname ASA01
+hostname asa01
 crypto key generate rsa mod 1024 no-confirm
 
 interface management0/0

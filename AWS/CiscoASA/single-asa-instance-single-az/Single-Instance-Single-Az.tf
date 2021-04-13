@@ -321,7 +321,7 @@ resource "aws_internet_gateway" "igw" {
 # create the route table for mgmt, outside, inside and dmz
 ####
 
-resource "aws_route_table" "mgnt-rt" {
+resource "aws_route_table" "mgmt-rt" {
   vpc_id = aws_vpc.asa_vpc.id
 
   tags = {
@@ -358,18 +358,18 @@ resource "aws_route_table" "dmz-rt" {
 ####
 
 resource "aws_route" "ext_default_route" {
-  route_table_id         = aws_route_table.asa_outside_route.id
+  route_table_id         = aws_route_table.mgmt-rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.int_gw.id
+  gateway_id             = aws_internet_gateway.igw.id
 }
 
 //To define the default route for inside network thur ASAv inside interface 
 resource "aws_route" "inside_default_route" {
   count = var.availability_zone_count * var.instances_per_az
   depends_on              = [aws_instance.asav]
-  route_table_id          = aws_route_table.asa_inside_route.id
+  route_table_id          = aws_route_table.inside-rt.id
   destination_cidr_block  = "0.0.0.0/0"
-  network_interface_id    = aws_network_interface.ASA_inside[count.index].id
+  network_interface_id    = aws_network_interface.asa_inside[count.index].id
 
 }
 
@@ -377,34 +377,34 @@ resource "aws_route" "inside_default_route" {
 resource "aws_route" "DMZ_default_route" {
   count = var.availability_zone_count * var.instances_per_az
   depends_on              = [aws_instance.asav]  
-  route_table_id          = aws_route_table.asa_dmz_route.id
+  route_table_id          = aws_route_table.dmz-rt.id
   destination_cidr_block  = "0.0.0.0/0"
-  network_interface_id    = aws_network_interface.ASA_dmz[count.index].id
+  network_interface_id    = aws_network_interface.asa_dmz[count.index].id
 
 }
 
 resource "aws_route_table_association" "outside_association" {
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id      = aws_subnet.outside_subnet[count.index].id
-  route_table_id = aws_route_table.asa_outside_route.id
+  subnet_id      = aws_subnet.outside[count.index].id
+  route_table_id = aws_route_table.outside-rt.id
 }
 
 resource "aws_route_table_association" "mgmt_association" {
    count = var.availability_zone_count * var.instances_per_az
-  subnet_id      = aws_subnet.mgmt_subnet[count.index].id
-  route_table_id = aws_route_table.asa_outside_route.id
+  subnet_id      = aws_subnet.mgmt[count.index].id
+  route_table_id = aws_route_table.outside-rt.id
 }
 
 resource "aws_route_table_association" "inside_association" {
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id      = aws_subnet.inside_subnet[count.index].id
-  route_table_id = aws_route_table.asa_inside_route.id
+  subnet_id      = aws_subnet.inside[count.index].id
+  route_table_id = aws_route_table.inside-rt.id
 }
 
 resource "aws_route_table_association" "dmz_association" {
   count = var.availability_zone_count * var.instances_per_az
-  subnet_id      = aws_subnet.dmz_subnet[count.index].id
-  route_table_id = aws_route_table.asa_dmz_route.id
+  subnet_id      = aws_subnet.dmz[count.index].id
+  route_table_id = aws_route_table.dmz-rt.id
 }
 ##################################################################################################################################
 # AWS External IP address creation and associating it to the mgmt and outside interface. 
@@ -414,7 +414,7 @@ resource "aws_route_table_association" "dmz_association" {
 resource "aws_eip" "asa_mgmt-EIP" {
   count = var.availability_zone_count * var.instances_per_az
   vpc   = true
-  depends_on = [aws_internet_gateway.int_gw]
+  depends_on = [aws_internet_gateway.igw]
   tags = {
     "Name" = "ASA Management IP"
   }
@@ -423,7 +423,7 @@ resource "aws_eip" "asa_mgmt-EIP" {
 resource "aws_eip" "asa_outside-EIP" {
   count = var.availability_zone_count * var.instances_per_az
   vpc   = true
-  depends_on = [aws_internet_gateway.int_gw]
+  depends_on = [aws_internet_gateway.igw]
   tags = {
     "Name" = "ASA outside IP"
   }
@@ -431,12 +431,12 @@ resource "aws_eip" "asa_outside-EIP" {
 
 resource "aws_eip_association" "asa-mgmt-ip-assocation" {
   count = var.availability_zone_count * var.instances_per_az
-  network_interface_id = aws_network_interface.ASA_mgmt[count.index].id
+  network_interface_id = aws_network_interface.asa_mgmt[count.index].id
   allocation_id        = aws_eip.asa_mgmt-EIP[count.index].id
 }
 resource "aws_eip_association" "asa-outside-ip-association" {
   count = var.availability_zone_count * var.instances_per_az
-  network_interface_id = aws_network_interface.ASA_outside[count.index].id
+  network_interface_id = aws_network_interface.asa_outside[count.index].id
   allocation_id        = aws_eip.asa_outside-EIP[count.index].id
 }
 
@@ -450,22 +450,22 @@ resource "aws_instance" "asav" {
     key_name            = var.key_name
     
 network_interface {
-    network_interface_id = aws_network_interface.ASA_mgmt[count.index].id
+    network_interface_id = aws_network_interface.asa_mgmt[count.index].id
     device_index         = 0
   }
 
    network_interface {
-    network_interface_id = aws_network_interface.ASA_outside[count.index].id
+    network_interface_id = aws_network_interface.asa_outside[count.index].id
     device_index         = 1
   }
 
     network_interface {
-    network_interface_id = aws_network_interface.ASA_inside[count.index].id
+    network_interface_id = aws_network_interface.asa_inside[count.index].id
     device_index         = 2
   }
 
     network_interface {
-    network_interface_id = aws_network_interface.ASA_dmz[count.index].id
+    network_interface_id = aws_network_interface.asa_dmz[count.index].id
     device_index         = 3
   }
   

@@ -1,15 +1,23 @@
 ####
-# This terraform template deploys single instance of Cisco ASAv using aws marketplace image (BYOL offreing). 
+# Created by Anubhav Swami - subscribe to my youtube channel for more informatoin (youtube.com/anubhavswami)
+# This terraform script has community support only, there is no offical support for this this terraform script.
+# Linkedin - https://www.linkedin.com/in/anubhavswami/
+####
+
+####
+# This terraform template deploys single instance of Cisco ASAv using aws marketplace image (BYOL offering). 
 # Cisco ASA is deployed with 4 interfaces (mgmt, outside, inside and dmz) in a new VPC 
 ####
 
 ####
 # Variables used in this terraform 
 ####
-
 variable "aws_access_key" {}
 variable "aws_secret_key" {}
-variable "key_name" {}
+
+variable "key_name" {
+  default = "ciscofw"
+}
 variable "region" {
         default = "us-east-1"
 }
@@ -25,7 +33,6 @@ variable "vpc_name" {
 ####
 # VPC cidr is /16 
 ####
-
 variable "vpc_cidr" {
     default = "10.82.0.0/16"
 }
@@ -33,7 +40,6 @@ variable "vpc_cidr" {
 ####
 # defining the subnets variables with the default value for Three Tier Architecure. 
 ####
-
 variable "mgmt" {
     default = "10.82.0.0/24"
 }
@@ -50,7 +56,6 @@ variable "dmz" {
 ####
 # assigning IP address of Cisco ASA 
 ####
-
 variable "asa_mgmt_ip" {
     default = "10.82.0.10"
 }
@@ -67,7 +72,6 @@ variable "asa_dmz_ip" {
 ####
 # assigning IP address of Cisco ASA 
 ####
-
 variable "size" {
   default = "c5.xlarge"
 }
@@ -75,11 +79,6 @@ variable "size" {
 ####
 # existing SSH Key on the AWS 
 ####
-
-variable "keyname" {
-  default = "ciscofw"
-}
-
 variable "availability_zone_count" {
   default = 1
 }
@@ -91,7 +90,6 @@ variable "instances_per_az" {
 ####
 # Cisco ASA marketplace image and version selection
 ####
-
 data "aws_ami" "asav" {
   #most_recent = true      // you can enable this if you want to deploy more
   owners      = ["aws-marketplace"]
@@ -121,17 +119,15 @@ data "aws_availability_zones" "available" {}
 ####
 # Provider (access_key and secret_key to AWS account)
 ####
-
 provider "aws" {
     access_key = var.aws_access_key
     secret_key = var.aws_secret_key
-    region     =  var.region
+    region     = var.region
 }
 
 ####
 # VPC resources 
 ####
-
 resource "aws_vpc" "asa_vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -149,8 +145,8 @@ resource "aws_subnet" "mgmt" {
   cidr_block        = var.mgmt
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
-  tags = {
-    Name = "var.vpc_name Managment Subnet count.index + 1"
+ tags = {
+    Name = "mgmt"
   }
 }
 
@@ -190,9 +186,8 @@ resource "aws_subnet" "dmz" {
 ####
 # VPC resources (this security group allows everything - recommendation is to control traffic from Cisco firewall)
 ####
-
 resource "aws_security_group" "allow_all" {
-  name        = "Allow All"
+  name        = "allow-all"
   description = "Allow all traffic"
   vpc_id      = aws_vpc.asa_vpc.id
 
@@ -211,7 +206,7 @@ resource "aws_security_group" "allow_all" {
   }
 
   tags = {
-    Name = "Public Allow"
+    Name = "allow-all"
   }
 }
 
@@ -233,15 +228,13 @@ resource "aws_default_security_group" "default" {
   }
 
   tags = {
-    Name = "Local Allow"
+    Name = "allow-local"
   }
 }
-
 
 ####
 # Network Interfaces, ASA instance, attaching the SG to interfaces
 ####
-
 resource "aws_network_interface" "asa_mgmt" {
   description   = "asa-mgmt"
   count = var.availability_zone_count * var.instances_per_az
@@ -307,116 +300,132 @@ resource "aws_network_interface_sg_attachment" "asa_dmz_attachment" {
 ####
 
 ####
-# define the internet gateway
+# define the internet gateway (IGW)
 ####
-
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.asa_vpc.id
   tags = {
-    Name = "Internet Gateway"
+    Name = "igw"
   }
 }
 
 ####
 # create the route table for mgmt, outside, inside and dmz
 ####
-
 resource "aws_route_table" "mgmt-rt" {
   vpc_id = aws_vpc.asa_vpc.id
-
   tags = {
-    Name = "managment network routing table"
+    Name = "mgmt-rt"
   }
 }
 
 resource "aws_route_table" "outside-rt" {
   vpc_id = aws_vpc.asa_vpc.id
-
   tags = {
-    Name = "outside network routing table"
+    Name = "outside-rt"
   }
 }
 
 resource "aws_route_table" "inside-rt" {
   vpc_id = aws_vpc.asa_vpc.id
-
   tags = {
-    Name = "inside network routing table"
+    Name = "inside-rt"
   }
 }
 
 resource "aws_route_table" "dmz-rt" {
   vpc_id = aws_vpc.asa_vpc.id
-
   tags = {
-    Name = "dmz network routing table"
+    Name = "dmz-rt"
   }
 }
 
 ####
-# To define the default routes thru IGW
+# To define the default routes via IGW
 ####
-
-resource "aws_route" "ext_default_route" {
+resource "aws_route" "mgmt_default_route" {
   route_table_id         = aws_route_table.mgmt-rt.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.igw.id
 }
 
-//To define the default route for inside network thur ASAv inside interface 
+####
+# To define the default route for outside subnet via IGW
+####
+resource "aws_route" "outside_default_route" {
+  route_table_id          = aws_route_table.outside-rt.id
+  destination_cidr_block  = "0.0.0.0/0"
+  gateway_id              = aws_internet_gateway.igw.id
+}
+
+####
+# To define the default route for inside subnet via ASAv inside interface 
+####
 resource "aws_route" "inside_default_route" {
   count = var.availability_zone_count * var.instances_per_az
   depends_on              = [aws_instance.asav]
   route_table_id          = aws_route_table.inside-rt.id
   destination_cidr_block  = "0.0.0.0/0"
   network_interface_id    = aws_network_interface.asa_inside[count.index].id
-
 }
 
-//To define the default route for DMZ network thur ASA inside interface 
+####
+# To define the default route for DMZ subnet via ASAv dmz interface 
+####
 resource "aws_route" "DMZ_default_route" {
   count = var.availability_zone_count * var.instances_per_az
   depends_on              = [aws_instance.asav]  
   route_table_id          = aws_route_table.dmz-rt.id
   destination_cidr_block  = "0.0.0.0/0"
   network_interface_id    = aws_network_interface.asa_dmz[count.index].id
-
 }
 
+####
+# assocate mgmt-rt to mgmt subnet 
+####
+resource "aws_route_table_association" "mgmt_association" {
+  count = var.availability_zone_count * var.instances_per_az
+  subnet_id      = aws_subnet.mgmt[count.index].id
+  route_table_id = aws_route_table.mgmt-rt.id
+}
+
+####
+# associate outsid-rt to outside subnet 
+####
 resource "aws_route_table_association" "outside_association" {
   count = var.availability_zone_count * var.instances_per_az
   subnet_id      = aws_subnet.outside[count.index].id
   route_table_id = aws_route_table.outside-rt.id
 }
 
-resource "aws_route_table_association" "mgmt_association" {
-   count = var.availability_zone_count * var.instances_per_az
-  subnet_id      = aws_subnet.mgmt[count.index].id
-  route_table_id = aws_route_table.outside-rt.id
-}
-
+####
+# assocate inside-rt to inside subnet 
+####
 resource "aws_route_table_association" "inside_association" {
   count = var.availability_zone_count * var.instances_per_az
   subnet_id      = aws_subnet.inside[count.index].id
   route_table_id = aws_route_table.inside-rt.id
 }
 
+####
+# assocate dmz-rt to dmz subnet 
+####
 resource "aws_route_table_association" "dmz_association" {
   count = var.availability_zone_count * var.instances_per_az
   subnet_id      = aws_subnet.dmz[count.index].id
   route_table_id = aws_route_table.dmz-rt.id
 }
-##################################################################################################################################
-# AWS External IP address creation and associating it to the mgmt and outside interface. 
-##################################################################################################################################
-//External ip address creation 
 
+#####
+# AWS External IP address creation and associating it to the mgmt and outside interface.
+# Cisco ASA would have two EIPs assigned - one to management interface (management-only) and second to outsid interface. 
+#####
 resource "aws_eip" "asa_mgmt-EIP" {
   count = var.availability_zone_count * var.instances_per_az
   vpc   = true
   depends_on = [aws_internet_gateway.igw]
   tags = {
-    "Name" = "ASA Management IP"
+    "Name" = "asa-managment-ip"
   }
 }
 
@@ -425,7 +434,7 @@ resource "aws_eip" "asa_outside-EIP" {
   vpc   = true
   depends_on = [aws_internet_gateway.igw]
   tags = {
-    "Name" = "ASA outside IP"
+    "Name" = "asa-outside-ip"
   }
 }
 
@@ -440,9 +449,10 @@ resource "aws_eip_association" "asa-outside-ip-association" {
   allocation_id        = aws_eip.asa_outside-EIP[count.index].id
 }
 
-##################################################################################################################################
-# Create the Cisco NGFW Instances 
-##################################################################################################################################
+#####
+# Create the Cisco ASA Instance with four interfaces (mgmt, outside, inside and dmz). 
+# Cisco ASA would have two EIPs assigned - one to management interface (management-only) and second to outsid interface. 
+#####
 resource "aws_instance" "asav" {
    count = var.availability_zone_count * var.instances_per_az
     ami                 = data.aws_ami.asav.id
@@ -472,14 +482,17 @@ network_interface {
   user_data = data.template_file.startup_file.rendered
 
   tags = {
-    Name = "cisco asa"
+    Name = "cisco-asa"
   }
 }
 
-##################################################################################################################################
-#Output
-##################################################################################################################################
-
+####
+# Output - This session displays public IP address of cisco-asa deployed by this terraform script 
+####
 output "ip" {
   value = aws_eip.asa_mgmt-EIP.*.public_ip
 }
+
+####
+# End of the terraform script!  
+####

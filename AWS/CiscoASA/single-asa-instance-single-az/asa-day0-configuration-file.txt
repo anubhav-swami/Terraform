@@ -1,5 +1,5 @@
 hostname asa01
-crypto key generate rsa mod 1024 no-confirm
+crypto key generate rsa mod 1024
 
 interface management0/0
     management-only
@@ -16,6 +16,12 @@ interface tengig 0/0
 interface tengig 0/1
     nameif inside
     security-level 100
+    ip address dhcp
+    no shutdown
+
+interface tengig 0/2
+    nameif dmz
+    security-level 50
     ip address dhcp
     no shutdown
 

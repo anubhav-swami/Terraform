@@ -40,7 +40,8 @@ Parameters
 - Define the Instance size of ASA and attach the interfaces and day0 configuration
   - ASA Interfaces IP address configurations download the ASA_startup_file and update the configurations
 
-- Please refer the below ASAv datasheet for the supported "size" https://www.cisco.com/c/en/us/products/collateral/security/adaptive-security-virtual-appliance-asav/datasheet-c78-733399.html?dtid=osscdc000283
+- Please refer the below ASAv datasheet for the supported "size" 
+https://www.cisco.com/c/en/us/products/collateral/security/adaptive-security-virtual-appliance-asav/datasheet-c78-733399.html?dtid=osscdc000283
 
 - The following parameters are using in this example:
   - size = "c5.xlarge"

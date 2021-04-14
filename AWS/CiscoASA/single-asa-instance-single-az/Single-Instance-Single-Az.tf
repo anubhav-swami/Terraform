@@ -210,28 +210,6 @@ resource "aws_security_group" "allow_all" {
   }
 }
 
-resource "aws_default_security_group" "default" {
-  vpc_id      = aws_vpc.asa_vpc.id
-
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  tags = {
-    Name = "allow-local"
-  }
-}
-
 ####
 # Network Interfaces, ASA instance, attaching the SG to interfaces
 ####

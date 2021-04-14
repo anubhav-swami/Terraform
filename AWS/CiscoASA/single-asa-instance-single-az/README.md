@@ -8,7 +8,7 @@ Prerequisite
 Overview
 Using this Terraform template, a single instance ASA can be deployed in a new VPC with the following components:
 
-Screen Shot 2021-04-14 at 2.53.37 PM![image](https://user-images.githubusercontent.com/34578479/114763801-369ab900-9d31-11eb-9fdc-cae4ce6129c1.png)
+(https://user-images.githubusercontent.com/34578479/114763801-369ab900-9d31-11eb-9fdc-cae4ce6129c1.png)
 
 - New VPC with four subnets (mgmt, outside, inside, and dmz) in a single AZ
 - Internet Gateway (IGW) to provide internet connectivity

@@ -1,7 +1,6 @@
 ####
 # Created by Anubhav Swami - subscribe to my youtube channel for more informatoin (youtube.com/anubhavswami)
 # This terraform script has community support only, there is no offical support for this this terraform script.
-# Linkedin - https://www.linkedin.com/in/anubhavswami/
 ####
 
 ####
